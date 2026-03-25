@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Plus, Trash2 } from 'lucide-react';
 
 // Tipagem para os dados do consultor
 interface ConsultorData {
@@ -31,7 +32,7 @@ const coresABV = {
 export default function App() {
   const [consultores, setConsultores] = useState<ConsultorData[]>(dadosIniciais);
 
-  // Função para atualizar os valores editáveis
+  // Função para atualizar os valores numéricos editáveis
   const handleInputChange = (id: number, campo: 'meta' | 'realizado', valor: string) => {
     const numero = parseInt(valor, 10);
     if (isNaN(numero) && valor !== '') return; // Permite apagar, mas só aceita números
@@ -39,6 +40,22 @@ export default function App() {
     setConsultores((prev) =>
       prev.map((c) => (c.id === id ? { ...c, [campo]: valor === '' ? 0 : numero } : c))
     );
+  };
+
+  // Função para atualizar o nome
+  const handleNameChange = (id: number, nome: string) => {
+    setConsultores((prev) => prev.map((c) => (c.id === id ? { ...c, nome } : c)));
+  };
+
+  // Função para adicionar consultor
+  const handleAddConsultor = () => {
+    const novoId = consultores.length > 0 ? Math.max(...consultores.map(c => c.id)) + 1 : 1;
+    setConsultores([...consultores, { id: novoId, nome: '', meta: 0, realizado: 0 }]);
+  };
+
+  // Função para remover consultor
+  const handleRemoveConsultor = (id: number) => {
+    setConsultores(consultores.filter((c) => c.id !== id));
   };
 
   // Calcula a data atual formatada
@@ -97,24 +114,27 @@ export default function App() {
       {/* Container Principal */}
       <main className="max-w-5xl mx-auto px-4">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="text-xl font-bold" style={{ color: coresABV.azulEscuro }}>
-              Ranking de Adesão (Calculadora)
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Altere os valores de Meta e Realizado para recalcular as porcentagens.
-            </p>
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-bold" style={{ color: coresABV.azulEscuro }}>
+                Ranking de Adesão (Calculadora)
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Adicione, remova ou altere os dados dos consultores.
+              </p>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[700px]">
+            <table className="w-full min-w-[800px]">
               <thead>
                 <tr className="text-white text-left text-sm" style={{ backgroundColor: coresABV.azulEscuro }}>
                   <th className="py-4 px-6 font-semibold rounded-tl-lg">Consultor</th>
                   <th className="py-4 px-6 font-semibold">Meta</th>
                   <th className="py-4 px-6 font-semibold">Realizado</th>
                   <th className="py-4 px-6 font-semibold">% Progresso</th>
-                  <th className="py-4 px-6 font-semibold text-center rounded-tr-lg">Conversão</th>
+                  <th className="py-4 px-6 font-semibold text-center">Conversão</th>
+                  <th className="py-4 px-6 font-semibold text-center rounded-tr-lg">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -125,15 +145,21 @@ export default function App() {
 
                   return (
                     <tr key={consultor.id} className="hover:bg-gray-50 transition-colors">
-                      {/* Consultor */}
+                      {/* Consultor (Editável) */}
                       <td className="py-4 px-6 flex items-center gap-4">
                         <div
-                          className="w-10 h-10 rounded-full text-white flex items-center justify-center font-bold text-lg shadow-sm"
+                          className="w-10 h-10 rounded-full text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0"
                           style={{ backgroundColor: coresABV.azulEscuro }}
                         >
-                          {consultor.nome.charAt(0)}
+                          {consultor.nome ? consultor.nome.charAt(0).toUpperCase() : '?'}
                         </div>
-                        <span className="font-medium text-gray-800">{consultor.nome}</span>
+                        <input
+                          type="text"
+                          value={consultor.nome}
+                          onChange={(e) => handleNameChange(consultor.id, e.target.value)}
+                          placeholder="Nome do consultor"
+                          className="w-full p-2 border border-transparent hover:border-gray-200 focus:border-gray-300 rounded focus:ring-2 focus:outline-none font-medium text-gray-800 transition-colors"
+                        />
                       </td>
 
                       {/* Meta (Editável) */}
@@ -143,7 +169,6 @@ export default function App() {
                           value={consultor.meta || ''}
                           onChange={(e) => handleInputChange(consultor.id, 'meta', e.target.value)}
                           className="w-20 p-2 border border-gray-300 rounded focus:ring-2 focus:outline-none text-center font-medium"
-                          style={{ focusRingColor: coresABV.teal }}
                         />
                       </td>
 
@@ -181,11 +206,41 @@ export default function App() {
                           {conversao.toFixed(1)}%
                         </span>
                       </td>
+
+                      {/* Ações */}
+                      <td className="py-4 px-6 text-center">
+                        <button
+                          onClick={() => handleRemoveConsultor(consultor.id)}
+                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                          title="Remover consultor"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
+                {consultores.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-gray-500">
+                      Nenhum consultor na lista. Clique em "Adicionar Consultor" abaixo.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
+          </div>
+          
+          {/* Botão Adicionar */}
+          <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-center">
+            <button
+              onClick={handleAddConsultor}
+              className="flex items-center gap-2 px-6 py-2 rounded-full text-white font-medium transition-transform hover:scale-105 shadow-sm"
+              style={{ backgroundColor: coresABV.teal }}
+            >
+              <Plus size={20} />
+              Adicionar Consultor
+            </button>
           </div>
         </div>
       </main>
